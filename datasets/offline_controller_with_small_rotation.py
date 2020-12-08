@@ -235,7 +235,10 @@ class ExhaustiveBFSController(Controller):
 
     def teleport_to_state(self, state):
         """ Only use this method when we know the state is valid. """
-        event = self.safe_teleport(state)
+        try:
+            event = self.safe_teleport(state)
+        except:
+            return None
         assert event.metadata["lastActionSuccess"]
         event = self.step(dict(action="Rotate", rotation=state.rotation))
         assert event.metadata["lastActionSuccess"]
@@ -327,11 +330,15 @@ class ExhaustiveBFSController(Controller):
 
     def enqueue_states(self, agent_state):
 
+        pdb_out = False
+
         if not self.allow_enqueue:
             return
 
         # Take all action in self.action and enqueue if they are valid.
         for action in self.actions:
+            if pdb_out:
+                import pdb; pdb.set_trace()
 
             next_state_guess = self.get_next_state(agent_state, action, True)
 
@@ -364,6 +371,10 @@ class ExhaustiveBFSController(Controller):
                     z=next_state_guess.z,
                 )
             )
+
+            if pdb_out:
+                import pdb; pdb.set_trace()
+
             if not event.metadata["lastActionSuccess"]:
                 self.teleport_to_state(agent_state)
                 continue
@@ -376,14 +387,41 @@ class ExhaustiveBFSController(Controller):
                 self.teleport_to_state(agent_state)
                 continue
 
+            if pdb_out:
+                import pdb; pdb.set_trace()
+
             next_state = self.get_state_from_event(event)
+
+            if next_state is None:
+                continue
+
+            next_state_dict = (next_state.x, next_state.z)
+            next_state_guess_dict = (next_state_guess.x, next_state_guess.z)
+
+            event = self.step(dict(action='GetReachablePositions'))
+
+            if event.metadata['actionReturn'] is None:
+                self.teleport_to_state(agent_state)
+                continue
+
+
+            x_z_reach = [(i['x'],i['z']) for i in event.metadata['actionReturn']]
+
+            if pdb_out:
+                import pdb; pdb.set_trace()
+
+            if next_state_dict not in x_z_reach or next_state_guess_dict not in x_z_reach:
+                self.teleport_to_state(agent_state)
+                continue
 
             if next_state != next_state_guess:
                 print(next_state)
                 print(next_state_guess)
+                self.teleport_to_state(agent_state)
+                continue
             assert next_state == next_state_guess
 
-            if self.enqueue_state(next_state) and self.make_graph:
+            if next_state is not None and self.enqueue_state(next_state) and self.make_graph:
                 self.add_edge(agent_state, next_state)
 
             # Return back to agents initial location.
@@ -426,6 +464,8 @@ class ExhaustiveBFSController(Controller):
         self.enqueue_state(self.get_state_from_event(event))
 
         while self.queue:
+            if False: #len(self.queue) < 5:
+                print("Stepping in queue: ", len(self.queue))
             self.queue_step()
 
         if self.make_grid:
@@ -462,6 +502,9 @@ class ExhaustiveBFSController(Controller):
 
         self.enqueue_states(search_state)
         self.visited_seen_states.append(search_state)
+
+        if event is None:
+            return 0
 
         if self.make_grid and not any(
             map(
