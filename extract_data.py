@@ -17,15 +17,15 @@ BFSController.unlock_release = noop
 BFSController.prune_releases = noop
 
 def search_and_save(in_queue):
-    # while not in_queue.empty():
-    #     try:
-    #         scene_name = in_queue.get(timeout=3)
-    #     except:
-    #         return
-    if True:
-        scene_name = in_queue
+    while not in_queue.empty():
+        try:
+            scene_name = in_queue.get(timeout=3)
+        except:
+            return
+    # if True:
+    #     scene_name = in_queue
         c = None
-        if True:#try:
+        try:
             out_dir = os.path.join('./data/2.4.22_plans/', scene_name)
             if not os.path.exists(out_dir):
                 os.mkdir(out_dir)
@@ -43,12 +43,12 @@ def search_and_save(in_queue):
             c.start()
             c.search_all_closed(scene_name)
             c.stop()
-        # except AssertionError as e:
-        #     print('Error is', e)
-        #     print('Error in scene {}'.format(scene_name))
-        #     if c is not None:
-        #         c.stop()
-        #     continue
+        except AssertionError as e:
+            print('Error is', e)
+            print('Error in scene {}'.format(scene_name))
+            if c is not None:
+                c.stop()
+            continue
 
 def extract_visible_objects(data_dir, scenes):
     for scene in scenes:
@@ -74,18 +74,18 @@ def extract_visible_objects(data_dir, scenes):
 
 def main():
 
-    num_processes = 30
+    num_processes = 3
     
     queue = Queue()
     scene_names = []
-    for i in range(0,4):
+    for i in range(3,4):
         for j in range(30):
             if i == 0:
                 scene_names.append("FloorPlan" + str(j + 1))
             else:
                 scene_names.append("FloorPlan" + str(i + 1) + '%02d' % (j + 1))
 
-    if False:
+    if True:
         for x in scene_names:
             queue.put(x)
 
