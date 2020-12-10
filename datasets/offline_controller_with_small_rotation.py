@@ -98,7 +98,7 @@ class ExhaustiveBFSController(Controller):
         seg_file=None,
         class_file=None,
         depth_file=None,
-        debug_mode=True,
+        debug_mode=False,
         grid_assumption=False,
         local_executable_path=None,
         actions=["MoveAhead", "RotateLeft", "RotateRight", "LookUp", "LookDown"],
